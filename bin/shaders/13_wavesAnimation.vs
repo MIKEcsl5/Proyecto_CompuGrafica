@@ -17,10 +17,9 @@ uniform float height;
 
 void main()
 {
-    
     vec4 PosL = vec4(aPos, 1.0f);
     PosL.z += 0.1f * sin(3*(PosL.x + time));
-    PosL.z += 0.1f * sin(3*(PosL.y + time));
+    PosL.z += 0.1f * sin(1*(PosL.y + time));
 
     gl_Position = projection * view * model * PosL;
 
