@@ -66,8 +66,8 @@ float elapsedTime = 0.0f;
 
 float sineTime = 0.0f;
 
-glm::vec3 position(0.0f,0.0f, 0.0f);
-glm::vec3 forwardView(0.0f, 0.0f, 1.0f);
+glm::vec3 position(0.0f, -1.0f, 3.0f);
+glm::vec3 forwardView(0.0f, 0.0f, -1.0f);
 float     scaleV = 0.005f;
 float     rotateCharacter = 0.0f;
 float	  door_offset = 0.0f;
@@ -75,10 +75,12 @@ float	  door_rotation = 0.0f;
 
 // Shaders
 Shader *ourShader;
+Shader *ourShader2;
 Shader *cubemapShader;
 Shader *mLightsShader;
 Shader *proceduralShader;
 Shader *wavesShader;
+Shader *peceraShader;
 
 // Carga la información del modelo
 Model	*character;
@@ -87,6 +89,7 @@ Model   *door;
 Model   *pecera;
 Model   *personaje;
 Model   *cobija;
+
 
 float tradius = 10.0f;
 float theta = 0.0f;
@@ -172,10 +175,11 @@ bool Start() {
 	glEnable(GL_DEPTH_TEST);
 
 	// Compilación y enlace de shaders
-	//ourShader     = new Shader("shaders/10_vertex_skinning-IT.vs", "shaders/10_fragment_skinning-IT.fs");
-	ourShader     = new Shader("shaders/12_ProceduralAnimation_v2.vs", "shaders/12_ProceduralAnimation_v2.fs");
+	ourShader2     = new Shader("shaders/10_vertex_skinning-IT.vs", "shaders/10_fragment_skinning-IT.fs");
+	ourShader     = new Shader("shaders/12_ProceduralAnimation_v2.vs", "shaders/12_ProceduralAnimation_v2.fs");//shader para la puerta
 	cubemapShader = new Shader("shaders/10_vertex_cubemap.vs", "shaders/10_fragment_cubemap.fs");
-	mLightsShader = new Shader("shaders/11_PhongShaderMultLights.vs", "shaders/11_PhongShaderMultLights.fs");
+	mLightsShader = new Shader("shaders/11_PhongShaderMultLights.vs", "shaders/11_PhongShaderMultLights.fs");//shader para la casa
+	peceraShader = new Shader("shaders/12_ProceduralAnimation_v3.vs", "shaders/12_ProceduralAnimation.fs");//shader para la pecera
 	proceduralShader = new Shader("shaders/12_ProceduralAnimation.vs", "shaders/12_ProceduralAnimation.fs");//shader para el personaje
 	wavesShader = new Shader("shaders/13_wavesAnimation.vs", "shaders/13_wavesAnimation.fs"); //shader para la cobija
 
@@ -189,8 +193,11 @@ bool Start() {
 	door = new Model("models/proyecto/Door.fbx");
 	personaje = new Model("models/proyecto/cosmo.fbx");
 	cobija = new Model("models/proyecto/grid.fbx");
+	pecera = new Model("models/proyecto/pecera.fbx");
+	
 
-	//character = new Model("models/proyecto/cosmo.fbx");
+
+	character = new Model("models/proyecto/timmy2.fbx");
 
 	// Cubemap
 	vector<std::string> faces
@@ -206,13 +213,13 @@ bool Start() {
 	mainCubeMap->loadCubemap(faces);
 	
 	// time, arrays
-	//character->SetPose(0.0f, gBones);
+	character->SetPose(0.0f, gBones);
 
-	//fps = (float)character->getFramerate();
-	//keys = (int)character->getNumFrames();
+	fps = (float)character->getFramerate();
+	keys = (int)character->getNumFrames();
 
 	camera3rd.Position = position;
-	camera3rd.Position.y += 1.7f;
+	camera3rd.Position.y += 0.5f;
 	camera3rd.Position -= forwardView;
 	camera3rd.Front = forwardView;
 
@@ -222,11 +229,16 @@ bool Start() {
 	light01.Position = glm::vec3(5.0f, 2.0f, 5.0f);
 	light01.Color = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 	gLights.push_back(light01);
+	
+
 	/*
+	//iluminacion lampara
 	Light light02;
-	light02.Position = glm::vec3(-5.0f, 2.0f, 5.0f);
-	light02.Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	//light02.Position = glm::vec3(-5.0f, 2.0f, 5.0f);
+	light02.Position = glm::vec3(0.0f, 0.0f, 0.0f);
+	light02.Color = glm::vec4(0.03f, 0.02f, 0.04f, 1.0f);
 	gLights.push_back(light02);
+	
 	
 	Light light03;
 	light03.Position = glm::vec3(5.0f, 2.0f, -5.0f);
@@ -288,7 +300,7 @@ bool Update() {
 			animationCount = 0;
 		}
 		// Configuración de la pose en el instante t
-		//character->SetPose((float)animationCount, gBones);
+		character->SetPose((float)animationCount, gBones);
 		elapsedTime = 0.0f;
 
 	}
@@ -387,6 +399,7 @@ bool Update() {
 		//mLightsShader->setMat4("model", model);
 
 		//door->Draw(*mLightsShader);
+
 	}
 	glUseProgram(0);
 	
@@ -461,6 +474,8 @@ bool Update() {
 
 		door->Draw(*ourShader);
 		proceduralTime	+= 0.01;
+
+		
 	}
 	glUseProgram(0);
 
@@ -474,11 +489,25 @@ bool Update() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
-		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection;
+		glm::mat4 view;
+
+		if (activeCamera) {
+			projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera.GetViewMatrix();
+		}
+		else {
+			projection = glm::perspective(glm::radians(camera3rd.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera3rd.GetViewMatrix();
+		}
+
 		proceduralShader->setMat4("projection", projection);
 		proceduralShader->setMat4("view", view);
+
+		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
+		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		//glm::mat4 view = camera.GetViewMatrix();
+		
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
@@ -489,7 +518,7 @@ bool Update() {
 		proceduralShader->setMat4("model", model);
 
 		proceduralShader->setFloat("time", proceduralTime);
-		proceduralShader->setFloat("radius", 5.0f);
+		proceduralShader->setFloat("radius", 2.0f);
 		proceduralShader->setFloat("height", 0.8f);
 
 		personaje->Draw(*proceduralShader);
@@ -501,7 +530,6 @@ bool Update() {
 	
 
 	// Actividad 5.3 Cobija 
-	
 	{
 		// Activamos el shader de Phong
 		wavesShader->use();
@@ -510,11 +538,25 @@ bool Update() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
-		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 projection;
+		glm::mat4 view;
+
+		if (activeCamera) {
+			projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera.GetViewMatrix();
+		}
+		else {
+			projection = glm::perspective(glm::radians(camera3rd.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera3rd.GetViewMatrix();
+		}
+
 		wavesShader->setMat4("projection", projection);
 		wavesShader->setMat4("view", view);
+
+		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
+		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		//glm::mat4 view = camera.GetViewMatrix();
+		
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
@@ -531,17 +573,59 @@ bool Update() {
 		wavesTime += 0.01f;
 
 	}
-	
+	glUseProgram(0);
 
+	//Pecera
+	{
+		// Activamos el shader de Phong
+		peceraShader->use();
 
+		// Activamos para objetos transparentes
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glm::mat4 projection;
+		glm::mat4 view;
+
+		if (activeCamera) {
+			projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera.GetViewMatrix();
+		}
+		else {
+			projection = glm::perspective(glm::radians(camera3rd.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+			view = camera3rd.GetViewMatrix();
+		}
+
+		peceraShader->setMat4("projection", projection);
+		peceraShader->setMat4("view", view);
+
+		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
+		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		//glm::mat4 view = camera.GetViewMatrix();
+		
+
+		// Aplicamos transformaciones del modelo
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.7f, -0.4f, -3.4f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.015f, 0.010f, 0.02f));
+		peceraShader->setMat4("model", model);
+
+		peceraShader->setFloat("time", wavesTime);
+		//peceraShader->setFloat("radius", 5.0f);
+		peceraShader->setFloat("height", 2.0f);
+
+		pecera->Draw(*peceraShader);
+		wavesTime += 0.01f;
+
+	}
 	glUseProgram(0);
 	
 	
-	// Objeto animado
-	/*
+	//Timmy turner
 	{
 		// Activación del shader del personaje
-		ourShader->use();
+		ourShader2->use();
 
 		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
 		
@@ -557,25 +641,25 @@ bool Update() {
 			view = camera3rd.GetViewMatrix();
 		}
 		
-		ourShader->setMat4("projection", projection);
-		ourShader->setMat4("view", view);
+		ourShader2->setMat4("projection", projection);
+		ourShader2->setMat4("view", view);
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, position); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(rotateCharacter), glm::vec3(0.0, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.01f, 0.01f, 0.01f));	// it's a bit too big for our scene, so scale it down
+		model = glm::scale(model, glm::vec3(0.004f, 0.004f, 0.004f));	// it's a bit too big for our scene, so scale it down
 
-		ourShader->setMat4("model", model);
+		ourShader2->setMat4("model", model);
 
-		ourShader->setMat4("gBones", MAX_RIGGING_BONES, gBones);
+		ourShader2->setMat4("gBones", MAX_RIGGING_BONES, gBones);
 
 		// Dibujamos el modelo
-		character->Draw(*ourShader);
+		character->Draw(*ourShader2);
 	}
 
 	glUseProgram(0); 
-	*/
+	
 
 
 	// glfw: swap buffers 
@@ -615,16 +699,16 @@ void processInput(GLFWwindow* window)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 
 	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-		if(door_offset <0.836f)
+		if(door_offset <=0.836f)
 			door_offset += 0.01f;
 	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-		if (door_offset > -0.836f)
+		if (door_offset >= -0.836f)
 			door_offset -= 0.01f;
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		if (door_rotation < 90.0f)
+		if (door_rotation <= 90.0f)
 			door_rotation += 1.f;
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		if (door_rotation < 90.0f)
+		if (door_rotation >= -90.0f)
 			door_rotation -= 1.f;
 
 	// Character movement
@@ -634,7 +718,7 @@ void processInput(GLFWwindow* window)
 		camera3rd.Front = forwardView;
 		camera3rd.ProcessKeyboard(FORWARD, deltaTime);
 		camera3rd.Position = position;
-		camera3rd.Position.y += 1.7f;
+		camera3rd.Position.y += 0.5f;
 		camera3rd.Position -= forwardView;
 
 	}
@@ -643,7 +727,7 @@ void processInput(GLFWwindow* window)
 		camera3rd.Front = forwardView;
 		camera3rd.ProcessKeyboard(BACKWARD, deltaTime);
 		camera3rd.Position = position;
-		camera3rd.Position.y += 1.7f;
+		camera3rd.Position.y += 0.5f;
 		camera3rd.Position -= forwardView;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
@@ -657,7 +741,7 @@ void processInput(GLFWwindow* window)
 
 		camera3rd.Front = forwardView;
 		camera3rd.Position = position;
-		camera3rd.Position.y += 1.7f;
+		camera3rd.Position.y += 0.5f;
 		camera3rd.Position -= forwardView;
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
@@ -671,7 +755,7 @@ void processInput(GLFWwindow* window)
 
 		camera3rd.Front = forwardView;
 		camera3rd.Position = position;
-		camera3rd.Position.y += 1.7f;
+		camera3rd.Position.y += 0.5f;
 		camera3rd.Position -= forwardView;
 	}
 

@@ -19,9 +19,9 @@ void main()
 {
     
     vec4 PosL = vec4(aPos, 1.0f);
-    //PosL.x += radius * cos(time);
-    //PosL.y += radius * sin(time);
-    PosL.z += height*cos(3*time);
+    PosL.x += radius * cos(time);
+    PosL.y += radius * sin(time);
+    //PosL.z += height*cos(3*time);
 
     gl_Position = projection * view * model * PosL;
 
