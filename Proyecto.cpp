@@ -75,7 +75,7 @@ float	  door_rotation = 0.0f;
 
 // Shaders
 Shader *ourShader;
-Shader *ourShader2;
+Shader *keyFrames;
 Shader *cubemapShader;
 Shader *mLightsShader;
 Shader *proceduralShader;
@@ -87,7 +87,7 @@ Model	*character;
 Model	*house;
 Model   *door;
 Model   *pecera;
-Model   *personaje;
+Model   *hada;
 Model   *cobija;
 
 
@@ -175,7 +175,7 @@ bool Start() {
 	glEnable(GL_DEPTH_TEST);
 
 	// Compilación y enlace de shaders
-	ourShader2     = new Shader("shaders/10_vertex_skinning-IT.vs", "shaders/10_fragment_skinning-IT.fs");
+	keyFrames = new Shader("shaders/10_vertex_skinning-IT.vs", "shaders/10_fragment_skinning-IT.fs");
 	ourShader     = new Shader("shaders/12_ProceduralAnimation_v2.vs", "shaders/12_ProceduralAnimation_v2.fs");//shader para la puerta
 	cubemapShader = new Shader("shaders/10_vertex_cubemap.vs", "shaders/10_fragment_cubemap.fs");
 	mLightsShader = new Shader("shaders/11_PhongShaderMultLights.vs", "shaders/11_PhongShaderMultLights.fs");//shader para la casa
@@ -191,7 +191,7 @@ bool Start() {
 
 	house = new Model("models/proyecto/prueba1.fbx");
 	door = new Model("models/proyecto/Door.fbx");
-	personaje = new Model("models/proyecto/cosmo.fbx");
+	hada = new Model("models/proyecto/cosmo.fbx");
 	cobija = new Model("models/proyecto/grid.fbx");
 	pecera = new Model("models/proyecto/pecera.fbx");
 	
@@ -224,32 +224,13 @@ bool Start() {
 	camera3rd.Front = forwardView;
 
 	// Lights configuration
-	
+	//Iluminacion global
 	Light light01;
 	light01.Position = glm::vec3(5.0f, 2.0f, 5.0f);
 	light01.Color = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 	gLights.push_back(light01);
-	
 
-	/*
-	//iluminacion lampara
-	Light light02;
-	//light02.Position = glm::vec3(-5.0f, 2.0f, 5.0f);
-	light02.Position = glm::vec3(0.0f, 0.0f, 0.0f);
-	light02.Color = glm::vec4(0.03f, 0.02f, 0.04f, 1.0f);
-	gLights.push_back(light02);
 	
-	
-	Light light03;
-	light03.Position = glm::vec3(5.0f, 2.0f, -5.0f);
-	light03.Color = glm::vec4(0.0f, 0.0f, 0.2f, 1.0f);
-	gLights.push_back(light03);
-
-	Light light04;
-	light04.Position = glm::vec3(-5.0f, 2.0f, -5.0f);
-	light04.Color = glm::vec4(0.2f, 0.2f, 0.0f, 1.0f);
-	gLights.push_back(light04);
-	*/
 
 	// SoundEngine->play2D("sound/EternalGarden.mp3", true);
 
@@ -358,8 +339,6 @@ bool Update() {
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, glm::vec3(2.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
 		
 		mLightsShader->setMat4("model", model);
@@ -370,7 +349,7 @@ bool Update() {
 			SetLightUniformVec3(mLightsShader, "Position", i, gLights[i].Position);
 			SetLightUniformVec3(mLightsShader, "Direction", i, gLights[i].Direction);
 			SetLightUniformVec4(mLightsShader, "Color", i, gLights[i].Color);
-			SetLightUniformVec4(mLightsShader, "Power", i, gLights[i].Power);
+			SetLightUniformVec4(mLightsShader, "Power", i, gLights[i].Power);	
 			SetLightUniformInt(mLightsShader, "alphaIndex", i, gLights[i].alphaIndex);
 			SetLightUniformFloat(mLightsShader, "distance", i, gLights[i].distance);
 		}
@@ -385,21 +364,6 @@ bool Update() {
 
 		house->Draw(*mLightsShader);
 		//Aqui termina la declaracion del modelo de la casa
-
-		//// Actividad 5.1
-		//// Efecto de puerta corrediza
-		////model = glm::translate(model, glm::vec3(0.418f + door_offset, 0.0f, 6.75f));
-		//// Efecto de puerta con bisagra
-		//model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(0.55f, -0.82f, 0.9f));
-		//model = glm::rotate(model, glm::radians(door_rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		//model = glm::scale(model, glm::vec3(0.86f, 0.4f, 0.5));	// it's a bit too big for our scene, so scale it down
-
-		//mLightsShader->setMat4("model", model);
-
-		//door->Draw(*mLightsShader);
-
 	}
 	glUseProgram(0);
 	
@@ -430,11 +394,6 @@ bool Update() {
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
-		//model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		////model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		////model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		//model = glm::scale(model, glm::vec3(2.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
 
 		ourShader->setMat4("model", model);
 
@@ -458,9 +417,7 @@ bool Update() {
 		ourShader->setFloat("transparency", material01.transparency);
 
 
-		// Actividad 5.1
-		// Efecto de puerta corrediza
-		//model = glm::translate(model, glm::vec3(0.418f + door_offset, 0.0f, 6.75f));
+		
 		// Efecto de puerta con bisagra
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.55f, -0.82f, 0.9f));
@@ -521,7 +478,7 @@ bool Update() {
 		proceduralShader->setFloat("radius", 2.0f);
 		proceduralShader->setFloat("height", 0.8f);
 
-		personaje->Draw(*proceduralShader);
+		hada->Draw(*proceduralShader);
 		proceduralTime += 0.01;
 
 
@@ -553,10 +510,7 @@ bool Update() {
 		wavesShader->setMat4("projection", projection);
 		wavesShader->setMat4("view", view);
 
-		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
-		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
-		//glm::mat4 view = camera.GetViewMatrix();
-		
+
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
@@ -599,10 +553,6 @@ bool Update() {
 		peceraShader->setMat4("projection", projection);
 		peceraShader->setMat4("view", view);
 
-		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
-		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
-		//glm::mat4 view = camera.GetViewMatrix();
-		
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
@@ -625,7 +575,7 @@ bool Update() {
 	//Timmy turner
 	{
 		// Activación del shader del personaje
-		ourShader2->use();
+		keyFrames->use();
 
 		// Aplicamos transformaciones de proyección y cámara (si las hubiera)
 		
@@ -641,8 +591,8 @@ bool Update() {
 			view = camera3rd.GetViewMatrix();
 		}
 		
-		ourShader2->setMat4("projection", projection);
-		ourShader2->setMat4("view", view);
+		keyFrames->setMat4("projection", projection);
+		keyFrames->setMat4("view", view);
 
 		// Aplicamos transformaciones del modelo
 		glm::mat4 model = glm::mat4(1.0f);
@@ -650,12 +600,12 @@ bool Update() {
 		model = glm::rotate(model, glm::radians(rotateCharacter), glm::vec3(0.0, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.004f, 0.004f, 0.004f));	// it's a bit too big for our scene, so scale it down
 
-		ourShader2->setMat4("model", model);
+		keyFrames->setMat4("model", model);
 
-		ourShader2->setMat4("gBones", MAX_RIGGING_BONES, gBones);
+		keyFrames->setMat4("gBones", MAX_RIGGING_BONES, gBones);
 
 		// Dibujamos el modelo
-		character->Draw(*ourShader2);
+		character->Draw(*keyFrames);
 	}
 
 	glUseProgram(0); 
